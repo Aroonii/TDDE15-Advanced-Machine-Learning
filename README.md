@@ -2,8 +2,8 @@
 TDDE15 - Advanced Machine Learning | Linköpings University
 
 # Lab 1 contains
-Graphical models
-Hill-climbing heuristics that generates Bayesian networks
+- Graphical models
+ Hill-climbing heuristics that generates Bayesian networks
 Markov blankets
 Naive Bayes classifier built through a Bayesian network
 
