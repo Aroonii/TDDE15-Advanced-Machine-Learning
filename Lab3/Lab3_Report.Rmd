@@ -1,0 +1,47 @@
+---
+title: "Lab3"
+author: "Arun Uppugunduri"
+date: '2020-10-07'
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Environment A
+
+Q-Table is a data structure which allows for the calculation of the maximum expected future rewards for actions at each state folling the shape of [state, action]. We start by initalilizing all values to zero and gradually update the table by computing new q-values and updating the q-table. The table then becomes a reference table which allows or the agent to select the best action at each state based on the q-value. 
+
+The Q-values are computed by using the Bellman equation and akes two inputs, state (s) and action (a) aond computes the different q-values for a particular state and action based on the expected discounted cumulative reward. After each move that the agen makes the q-values are computed using the bellman equation and the q-table is update
+
+Epsilon greedy strategy: In the beginning the epsilon rate will be higher causing the agent to explore the environment and randomly choosing actions but as the agent explores the environment the epsilon rate gradually decreases and the agent starts to exploit the environment. During this process of exploration the agent becomes more confident in the estimation of the q-values (estimated future rewards) and can start exploiting it in order to make better decisions. 
+
+Having selected an action causing in the agent to move we can then observe the outcome and reward. Next step after this is completed is to update the Q-values through the q-function. In this tay the Q-table is updated and the value function is maximized. Q(state, action) returns the expected future return of the action a at state s
+
+```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '60%'}
+knitr::include_graphics("bellman_update.png")
+```
+
+By applying max we are taking max of the future reward and applying it to the current action. In other words, allocating future reward to current action in order to help the agent select the highest return action at any given state. This is one of the big advantages of q-learning since it impacts the current action by possible future reward instead of only looking at the immedeate. 
+
+
+## Environment B
+
+*This is a 7×8 environment where the top and bottom rows have negative rewards. In this environment, the agent starts each episode in the state (4, 1). There are two positive rewards, of 5 and 10. The reward of 5 is easily reachable, but the agent has to navigate around the first reward in order to find the reward worth 10. Your task is to investigate how the epsilon and γ parameters affect the learned policy by running 30000 episodes of Q-learning with epsilon = 0.1, 0.5, γ = 0.5, 0.75, 0.95, β = 0 and α = 0.1. To do so, simply run the code provided in the file RL Lab1.R and explain your observations*
+
+```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics("image.png")
+```
+
+Reward: Reward is stated as the value received after having completed a certain action given a certain state. A reward cain either happen at any given time step or only at the terminal step
+
+Exploiting: Exploiting is when the agent interacts with the environment by looking at the q-table to determine action based on max value of the action.
+
+Exploring: Similar to exploiting, but instead of always choosing aciton based on max future reward  we include the posssibility for an action at random which then allows for the agent to explore and discover new states which would not have been found using a greedy algorithm (Exploiting)
+
+Epsilon: Epsilon states the balance between explore/exploit, meaing with what probability we want to choose the action with largest future reward or choose an action at random 
+
+Gamma: Gamma is a discount factor which is used in order to determine how we want the model to value immedeate contra future reward. By applying the this factor [0,1] to the future reward we can therfore shrink the importance of the future reward. If gamma = 1 then the future reward is valued the same as immedeate.  

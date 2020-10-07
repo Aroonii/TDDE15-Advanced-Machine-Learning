@@ -118,8 +118,8 @@ computations = function(hmm, sampleSize){
   
   result = list("accuracy" = accuracy,
                 "smoothing" = smoothing,
-                "filtering" = prop.table(alpha, margin = 2),
-                "filtering_2" = filtering)
+                "filtering" = filtering,
+                "viterbi" = viterbi)
   
   return(result)
 }
@@ -359,8 +359,8 @@ computations = function(hmm, sampleSize){
   
   result = list("accuracy" = accuracy,
                 "smoothing" = smoothing,
-                "filtering" = prop.table(alpha, margin = 2),
-                "filtering_2" = filtering)
+                "filtering" = filtering,
+                "viterbi" = viterbi)
   
   return(result)
 }
@@ -794,4 +794,5 @@ next_prob = transition_matrix %*%  current_prob
 cat("Probabilities for the hidden states in step 101: ", next_prob)
 which.max(next_prob != 0)
 ```
+
 

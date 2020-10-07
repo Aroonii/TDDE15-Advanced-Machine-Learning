@@ -279,8 +279,8 @@ computations = function(hmm, sampleSize){
   
   result = list("accuracy" = accuracy,
                 "smoothing" = smoothing,
-                "filtering" = prop.table(alpha, margin = 2),
-                "filtering_2" = filtering)
+                "filtering" = filtering,
+                "viterbi" = viterbi)
   
   return(result)
 }
