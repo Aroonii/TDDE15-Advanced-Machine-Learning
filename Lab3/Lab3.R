@@ -77,8 +77,13 @@ GreedyPolicy <- function(x, y){
   #   An action, i.e. integer in {1,2,3,4}.
   
   # Your code here.
-  movement1 = sample(which(q_table[x,y,] == max(q_table[x,y,])),1)
-  return(movement1)
+  move = which(q_table[x,y,] == max(q_table[x,y,]))
+  if(length(move) > 1){
+    return(sample(move,1))
+  }
+  else{
+    return(move)
+  }
 }
 
 EpsilonGreedyPolicy <- function(x, y, epsilon){
@@ -94,7 +99,7 @@ EpsilonGreedyPolicy <- function(x, y, epsilon){
   
   # Your code here.
   if (runif(1,0,1) > epsilon){
-    return(which.max(q_table[x,y,]))
+    return(GreedyPolicy(x,y))
   }
   else{
     return(sample(4,1))
@@ -147,56 +152,35 @@ q_learning <- function(start_state, epsilon = 0.5, alpha = 0.1, gamma = 0.95,
   
   #qtable holds values for the expected future reward of an action given a certain state
   
-#  Qstate=start_state
-#  reward=0
-#  temporal_difference=0
-#  
-#  repeat{
-#    # Follow policy, execute action, get reward.
-#    x=Qstate[1]
-#    y=Qstate[2]
-#    #Compute what action to take
-#    action=EpsilonGreedyPolicy(x, y, epsilon)
-#    #Compute new state after given action
-#    new_state=transition_model(x, y, action, beta)
-#    #Extract the reward for the given action with the given state
-#    reward=reward_map[new_state[1], new_state[2]]
-#    
-#    #Temporal difference = R + γ maxQ(S′, a) − Q(S, A) 
-#    # Q-table update.
-#    temporal_difference=temporal_difference  + reward+gamma*max(q_table[new_state[1], new_state[2],])
-#    q_table[x,y,action] <<- q_table[x,y,action] + alpha*(reward + gamma*max(q_table[new_state[1], new_state[2],]) - q_table[x,y,action])
-#    
-#    #Update the state coordinates
-#    Qstate=new_state
-#    
-#    if(reward!=0)
-#      # End episode.
-#      return (c(reward,temporal_difference))
-#  }
-  q_state=start_state
+  Qstate=start_state
   reward=0
-  episode_correction=0
+  temporal_difference=0
   
   repeat{
     # Follow policy, execute action, get reward.
-    x=q_state[1]
-    y=q_state[2]
+    x=Qstate[1]
+    y=Qstate[2]
+    #Compute what action to take
     action=EpsilonGreedyPolicy(x, y, epsilon)
+    #action=GreedyPolicy(x, y)
+    #Compute new state after given action
     new_state=transition_model(x, y, action, beta)
+    #Extract the reward for the given action with the given state
     reward=reward_map[new_state[1], new_state[2]]
     
+    #Temporal difference = R + γ maxQ(S′, a) − Q(S, A) 
     # Q-table update.
-    episode_correction=episode_correction+reward+gamma*max(q_table[new_state[1], new_state[2],])
-    correction=alpha*(reward+gamma*max(q_table[new_state[1], new_state[2],])-q_table[x,y,action])
-    q_table[x,y,action]<<-q_table[x,y,action]+correction
-    q_state=new_state
+    temporal_difference=temporal_difference  + reward+gamma*max(q_table[new_state[1], new_state[2],])
+    q_table[x,y,action] <<- q_table[x,y,action] + alpha*(reward + gamma*max(q_table[new_state[1], new_state[2],]) - q_table[x,y,action])
+    
+    #Update the state coordinates
+    Qstate=new_state
     
     if(reward!=0)
       # End episode.
-      return (c(reward,episode_correction))
+      return (c(reward,temporal_difference))
   }
-  
+
   }
 
 
@@ -204,30 +188,28 @@ q_learning <- function(start_state, epsilon = 0.5, alpha = 0.1, gamma = 0.95,
 # Q-Learning Environments
 #####################################################################################################
 
-# Environment A (learning)
-#W <- 7
-#H <- 5
-#
-#reward_map <- matrix(0, nrow = H, ncol = W)
-#reward_map[3,6] <- 10
-#reward_map[2:4,3] <- -1
-#
-#q_table <- array(0,dim = c(H,W,4))
-#
-#vis_environment()
-#
-#for(i in 1:10000){
-#  foo <- q_learning(start_state = c(3,1))
-#  
-#  if(any(i==c(10,100,1000,10000)))
-#    vis_environment(i)
-#}
+###################### Environment A (learning)
+set.seed(12345)
+W <- 7
+H <- 5
 
+reward_map <- matrix(0, nrow = H, ncol = W)
+reward_map[3,6] <- 10
+reward_map[2:4,3] <- -1
 
+q_table <- array(0,dim = c(H,W,4))
 
+vis_environment()
 
+for(i in 1:10000){
+  foo <- q_learning(start_state = c(3,1))
+  
+  if(any(i==c(10,100,1000,10000)))
+    vis_environment(i)
+}
 ## Environment B (the effect of epsilon and gamma)
-
+#
+set.seed(12345)
 H <- 7
 W <- 8
 
@@ -280,25 +262,25 @@ for(j in c(0.5,0.75,0.95)){
   plot(MovingAverage(reward,100),type = "l")
   plot(MovingAverage(correction,100),type = "l")
 }
+########################## Environment C (the effect of beta).
 
-## Environment C (the effect of beta).
-#
-#H <- 3
-#W <- 6
+H <- 3
+W <- 6
+reward_map <- matrix(0, nrow = H, ncol = W)
+reward_map[1,2:5] <- -1
+reward_map[1,6] <- 10
 
-#reward_map <- matrix(0, nrow = H, ncol = W)
-#reward_map[1,2:5] <- -1
-#reward_map[1,6] <- 10
-#
-#q_table <- array(0,dim = c(H,W,4))
-#
-#vis_environment()
-#
-#for(j in c(0,0.2,0.4,0.66)){
-#  q_table <- array(0,dim = c(H,W,4))
-#  
-#  for(i in 1:10000)
-#    foo <- q_learning(gamma = 0.6, beta = j, start_state = c(1,1))
-#  
-#  vis_environment(i, gamma = 0.6, beta = j)
-#}#
+q_table <- array(0,dim = c(H,W,4))
+
+vis_environment()
+
+for(j in c(0,0.2,0.4,0.66)){
+  q_table <- array(0,dim = c(H,W,4))
+  
+  for(i in 1:10000)
+    foo <- q_learning(gamma = 0.6, beta = j, start_state = c(1,1))
+  
+  vis_environment(i, gamma = 0.6, beta = j)
+}#
+
+

@@ -1,4 +1,4 @@
-# By Jose M. PeÃ±a and Joel Oskarsson.
+# By Jose M. Peña and Joel Oskarsson.
 # For teaching purposes.
 # jose.m.pena@liu.se.
 
@@ -178,7 +178,7 @@ q_learning <- function(start_state, epsilon = 0.5, alpha = 0.1, gamma = 0.95,
 # Q-Learning Environments
 #####################################################################################################
 
-# Environment A (learning)
+############################# Environment A (learning)
 
 set.seed(12345)
 H <- 5
@@ -198,3 +198,87 @@ for(i in 1:10000){
   if(any(i==c(10,100,1000,10000)))
     vis_environment(i)
 }
+
+############################## Environment B (the effect of epsilon and gamma)
+#
+#set.seed(12345)
+#
+#H <- 7
+#W <- 8
+#
+#reward_map <- matrix(0, nrow = H, ncol = W)
+#reward_map[1,] <- -1
+#reward_map[7,] <- -1
+#reward_map[4,5] <- 5
+#reward_map[4,8] <- 10
+#
+#q_table <- array(0,dim = c(H,W,4))
+#
+#vis_environment()
+#
+#MovingAverage <- function(x, n){
+#  
+#  cx <- c(0,cumsum(x))
+#  rsum <- (cx[(n+1):length(cx)] - cx[1:(length(cx) - n)]) / n
+#  
+#  return (rsum)
+#}
+#
+#for(j in c(0.5,0.75,0.95)){
+#  q_table <- array(0,dim = c(H,W,4))
+#  reward <- NULL
+#  correction <- NULL
+#  
+#  for(i in 1:30000){
+#    foo <- q_learning(gamma = j, start_state = c(4,1))
+#    reward <- c(reward,foo[1])
+#    correction <- c(correction,foo[2])
+#  }
+#  
+#  vis_environment(i, gamma = j)
+#  plot(MovingAverage(reward,100),type = "l", main="Moving avg of reward", sub=paste(expression(gamma),"=", j, "and ",
+#                                                                                    expression(epsilon), "=", "0.5"))
+#  plot(MovingAverage(correction,100),type = "l", main="Moving avg of correction", sub=paste(expression(gamma),"=", j, "and ",
+#                                                                                            expression(epsilon), "=", "0.5"))
+#}
+#
+#for(j in c(0.5,0.75,0.95)){
+#  q_table <- array(0,dim = c(H,W,4))
+#  reward <- NULL
+#  correction <- NULL
+#  
+#  for(i in 1:30000){
+#    foo <- q_learning(epsilon = 0.1, gamma = j, start_state = c(4,1))
+#    reward <- c(reward,foo[1])
+#    correction <- c(correction,foo[2])
+#  }
+#  
+#  vis_environment(i, epsilon = 0.1, gamma = j)
+#  plot(MovingAverage(reward,100),type = "l", main="Moving avg of reward", sub=paste(expression(gamma),"=", j, "and ",
+#                                                                                    expression(epsilon), "=", "0.1"))
+#  plot(MovingAverage(correction,100),type = "l", main="Moving avg of correction", sub=paste(expression(gamma),"=", j, "and ",
+#                                                                                            expression(epsilon), "=", "0.1"))
+#}
+#
+
+###################### Environment C (the effect of beta).
+#
+#H <- 3
+#W <- 6
+#
+#reward_map <- matrix(0, nrow = H, ncol = W)
+#reward_map[1,2:5] <- -1
+#reward_map[1,6] <- 10
+#
+#q_table <- array(0,dim = c(H,W,4))
+#
+#vis_environment()
+#
+#for(j in c(0,0.2,0.4,0.66)){
+#  q_table <- array(0,dim = c(H,W,4))
+#  
+#  for(i in 1:10000)
+#    foo <- q_learning(gamma = 0.6, beta = j, start_state = c(1,1))
+#  
+#  vis_environment(i, gamma = 0.6, beta = j)
+#}#
