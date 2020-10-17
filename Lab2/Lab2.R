@@ -366,7 +366,7 @@ points(apply(computation3$filtering, MARGIN = 2, entropy.empirical), type = 'l',
 # so this we already have from the initial transition matrix. We can consequently predict the probabilities for the next step
 # by doing the matrix multiplication
 current_prob = computation1$filtering[,100]
-next_prob = transition_matrix %*%  current_prob
+next_prob = t(transition_matrix) %*%  current_prob
 
 cat("Probabilities for the hidden states in step 101: ", next_prob)
 which.max(next_prob != 0)

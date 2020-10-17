@@ -6,8 +6,8 @@ output: word_document
 ---
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE, echo = TRUE}
+#knitr::opts_chunk$set(echo = TRUE)
 library(HMM)
 
 ### StartProbs
@@ -141,7 +141,7 @@ library(entropy)
 
 ### TASK 7 ###
 current_prob = computation1$filtering[,100]
-next_prob = transition_matrix %*%  current_prob
+next_prob = t(transition_matrix) %*%  current_prob
 ```
 
 *The purpose of the lab is to put in practice some of the concepts covered in the lectures. To do so, you are asked to model the behavior of a robot that walks around a ring. The ring is divided into 10 sectors. At any given time point, the robot is in one of the sectors and decides with equal probability to stay in that sector or move to the next sector. You do not have direct observation of the robot. However, the robot is equipped with a tracking device that you can access. The device is not very accurate though: If the robot is in the sector i, then the device will report that the robot is in the sectors [i − 2, i + 2] with equal probability.*
@@ -427,7 +427,7 @@ We can predict the probabilities of the hidden states at time step 101 by lookin
 We know the probabilities of the current (100) step. The transition probabilities between time steps will always be the same so this we already have from the initial transition matrix. We can consequently predict the probabilities for the next step by doing the matrix multiplication
 ```{r}
 current_prob = computation1$filtering[,100]
-next_prob = transition_matrix %*%  current_prob
+next_prob = t(transition_matrix) %*%  current_prob
 ```
 
 ```{r, echo = FALSE}
@@ -787,12 +787,153 @@ points(apply(computation3$filtering, MARGIN = 2, entropy.empirical), type = 'l',
 
 # We know the probabilities of the current (100) step. The transition probabilities between time steps will always be the same
 # so this we already have from the initial transition matrix. We can consequently predict the probabilities for the next step
-# by doing the matrix multiplication
+# by doing the matrix multiplication. Due to the form of the transition matrix we take the transpose of the matrix in order to multiply with the transition probabilityies for each state i.e column 1 for state 1 etc. 
 current_prob = computation1$filtering[,100]
-next_prob = transition_matrix %*%  current_prob
+next_prob = t(transition_matrix) %*%  current_prob
 
 cat("Probabilities for the hidden states in step 101: ", next_prob)
 which.max(next_prob != 0)
 ```
 
+
+## CODE
+```{r, echo = TRUE, eval = FALSE}
+library(HMM)
+
+### TASK 1 ###
+
+### StartProbs
+# Initial state will be any of the 10 states with equal probability
+startProbs = rep(0.1, 10)
+
+### States
+states = seq(1,10,1)
+
+### Symbols
+symbols = seq(1,10, 1)
+
+transition_prob <-    c(0.5, 0.5, 0, 0, 0, 0, 0, 0, 0, 0,
+                       0, 0.5, 0.5, 0, 0, 0, 0, 0, 0, 0,
+                       0, 0, 0.5, 0.5, 0, 0, 0, 0, 0, 0,
+                       0, 0, 0, 0.5, 0.5, 0, 0, 0, 0, 0,
+                       0, 0, 0, 0, 0.5, 0.5, 0, 0, 0, 0,
+                       0, 0, 0, 0, 0, 0.5, 0.5, 0, 0, 0,
+                       0, 0, 0, 0, 0, 0, 0.5, 0.5, 0, 0,
+                       0, 0, 0, 0, 0, 0, 0, 0.5, 0.5, 0,
+                       0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0.5,
+                       0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0.5)
+
+#R sums by column as default, therfore we set byrow = TRUE
+transition_matrix <- matrix(data = transition_prob,
+                            ncol = 10,
+                            nrow = 10,
+                            byrow = TRUE)
+
+transition_matrix
+
+transprobs = matrix(0, 10, 10)
+diag(transprobs) = 0.5
+diag(transprobs[,-1]) = 0.5
+transprobs[10,1] = 0.5
+transprobs
+
+emission_prob <- c(0.2, 0.2, 0.2, 0, 0, 0, 0, 0, 0.2, 0.2,
+                     0.2, 0.2, 0.2, 0.2, 0, 0, 0, 0, 0, 0.2,
+                     0.2, 0.2, 0.2, 0.2, 0.2, 0, 0, 0, 0, 0,
+                     0, 0.2, 0.2, 0.2, 0.2, 0.2, 0, 0, 0, 0,
+                     0, 0, 0.2, 0.2, 0.2, 0.2, 0.2, 0, 0, 0,
+                     0, 0, 0, 0.2, 0.2, 0.2, 0.2, 0.2, 0, 0,
+                     0, 0, 0, 0, 0.2, 0.2, 0.2, 0.2, 0.2, 0,
+                     0, 0, 0, 0, 0, 0.2, 0.2, 0.2, 0.2, 0.2,
+                     0.2, 0, 0, 0, 0, 0, 0.2, 0.2, 0.2, 0.2,
+                     0.2, 0.2, 0, 0, 0, 0, 0, 0.2, 0.2, 0.2)
+
+emission_matrix <- matrix(data = emission_prob,
+                          ncol = 10,
+                          nrow = 10,
+                          byrow = TRUE)
+
+# Create the hiddent markov model for the describe situation
+HMM = initHMM(States = states, 
+              Symbols = symbols, 
+              startProbs = startProbs,
+              transProbs = transprobs, 
+              emissionProbs = emission_matrix)
+
+
+observation_sequence = 100
+HMM_simulation = simHMM(hmm = HMM, length = observation_sequence)
+
+smoothing_prob = posterior(HMM, HMM_simulation$observation)
+
+alpha_log = forward(hmm = HMM, observation = HMM_simulation$observation)
+# Convert to normal prob
+alpha = exp(alpha_log)
+#filtered_prob = alpha / colSums(alpha)
+#print(filtered_prob)
+# margin = 2 => divide by colSums 
+# Normalize the output
+filtered_prob = prop.table(alpha, margin = 2)
+
+viterbi_path = viterbi(HMM, HMM_simulation$observation)
+
+
+### TASK 4
+smoothing = apply(smoothing_prob, MARGIN = 2, which.max)
+accuracy_smooth = mean(smoothing == HMM_simulation$states)
+filtered = apply(filtered_prob, MARGIN = 2, which.max)
+accuracy_filtered = mean(filtered == HMM_simulation$states)
+accuracy_viterbi = mean(viterbi_path == HMM_simulation$states)
+accuracy_table = data.frame(Smoothed = accuracy_smooth, Filtered = accuracy_filtered, Viterbi = accuracy_viterbi)
+
+
+### TASK 5
+computations = function(hmm, sampleSize){
+  simulation = simHMM(hmm = hmm, length = sampleSize)
+  
+  smoothing = posterior(hmm, simulation$observation)
+  #Compute filtering probability distribution
+  alpha_log = forward(hmm, simulation$observation)
+  alpha = exp(alpha_log)
+  filtering = prop.table(alpha, margin = 2)
+  #Compute viterbi probability distribution
+  viterbi = viterbi(hmm, simulation$observation)
+  
+  #Compute accuracies
+  smoothing_max = apply(smoothing, MARGIN = 2, FUN = which.max)
+  accuracy_smoothing = mean(smoothing_max == simulation$states)
+  filtering_max = apply(filtering, MARGIN = 2, FUN = which.max)
+  accuracy_filtering = mean(filtering_max == simulation$states)
+  accuracy_viterbi = mean(viterbi == simulation$states)
+  
+  accuracy = data.frame(Smooting = accuracy_smoothing, Filtering = accuracy_filtering, Viterbi = accuracy_viterbi)
+  
+  result = list("accuracy" = accuracy,
+                "smoothing" = smoothing,
+                "filtering" = filtering,
+                "viterbi" = viterbi)
+  
+  return(result)
+}
+
+# Case 1
+computation1 = computations(hmm = HMM, sampleSize = 100)
+# Case 2
+computation2 = computations(hmm = HMM, sampleSize = 100)
+# Case 3
+computation3 = computations(hmm = HMM, sampleSize = 100)
+
+
+
+### TASK 6 ###
+library(entropy)
+
+
+
+
+### TASK 7 ###
+current_prob = computation1$filtering[,100]
+next_prob = t(transition_matrix) %*%  current_prob
+
+```
 
