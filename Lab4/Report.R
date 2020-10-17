@@ -1,11 +1,8 @@
 library(kernlab)
 
 
+
 ### Assignment 1### 
-
-
-# Simulate nSim realizations (functions) from a GP wiht mean 0 and covariance K(x,x')
-
 
 # Covariance function
 # The function takes in input values x1, x2 and computes the exponential kernel which gives
@@ -70,6 +67,7 @@ PosteriorGP = function(X, y, XStar, sigmaNoise, hyperParameter){
 # Let the hyperparameters be the following: sigmaf = 1, el = 0,3, using a singel observation (x,y) = (0.4, 0.719), sigmanoise = 0.1
 # Plot the posterior
 
+
 #Function for plotting the result
 plotGP = function(mean,variance,grid,x,y){
   plot(grid,mean,ylim = c(min(mean-1.96*sqrt(variance))
@@ -77,16 +75,10 @@ plotGP = function(mean,variance,grid,x,y){
        type = "l")
   lines(grid,
         mean+1.96*sqrt(variance), 
-        col = rgb(0, 0, 0, 0.3))
+        col = "red")
   lines(grid,
         mean-1.96*sqrt(variance), 
-        col = rgb(0, 0, 0, 0.3))
-  lines(grid,
-        mean+1.96*sqrt(variance)+sigmanoise^2,
-        col = rgb(0, 0, 0, 1))
-  lines(grid,
-        mean-1.96*sqrt(variance)+sigmanoise^2, 
-        col = rgb(0, 0, 0, 1))
+        col = "red")
   points(x,y)
 }
 
@@ -99,20 +91,25 @@ xGrid = seq(-1,1,0.01)
 GP = PosteriorGP(obs[,1], obs[,2], xGrid, sigmanoise,c(sigmaF, ell))
 plotGP(GP$`Predictive mean`, GP$`Predicitive variance`, xGrid, obs[1,1], obs[1,2])
 
+
+
 ### Part 1.3
 #Update the posterior with another observation (x,y) = (-0.6, -0.044) and plot the posterior mean of f and the probability bands
+
+
 
 newobs = c(-0.6, -0.044)
 obs_1.3 = rbind(obs, newobs)
 GP = PosteriorGP(obs_1.3[,1], obs_1.3[,2], xGrid, sigmanoise,c(sigmaF, ell))
-plotGP(GP$`Predictive mean`, GP$`Predicitive variance`, xGrid, obs[1,1], obs[1,2])
+plotGP(GP$`Predictive mean`, GP$`Predicitive variance`, xGrid, obs_1.3[,1], obs_1.3[,2])
+
 
 ### Part 1.4
 #Compute now the posterior distirbution of f using all available data points
 
 obs_1.4 = data.frame(x=c(-1,-0.6, -0.2, 0.4, 0.8), y=c(0.768, -0.044, -0.904, 0.719,-0.664))
 GP = PosteriorGP(obs_1.4[,1], obs_1.4[,2], xGrid, sigmanoise,c(sigmaF, ell))
-plotGP(GP$`Predictive mean`, GP$`Predicitive variance`, xGrid, obs[1,1], obs[1,2])
+plotGP(GP$`Predictive mean`, GP$`Predicitive variance`, xGrid, obs_1.4[,1], obs_1.4[,2])
 
 
 #Part 1.5
@@ -121,8 +118,7 @@ plotGP(GP$`Predictive mean`, GP$`Predicitive variance`, xGrid, obs[1,1], obs[1,2
 sigmaF = 1
 ell = 1
 GP = PosteriorGP(obs_1.4[,1], obs_1.4[,2], xGrid, sigmanoise,c(sigmaF, ell))
-plotGP(GP$`Predictive mean`, GP$`Predicitive variance`, xGrid, obs[1,1], obs[1,2])
-
+plotGP(GP$`Predictive mean`, GP$`Predicitive variance`, xGrid, obs_1.4[,1], obs_1.4[,2])
 
 
 
@@ -242,7 +238,7 @@ legend("bottomright", legend = c("posterior mean", "observations"),col=c("red", 
 
 
 
-### 2.3 ###
+### 2.3
 # Make own computations to obtain the posterior variance of f and plot the
 # 95 % probability bands for f. To do this we can use the prviously computed
 # function PosteriorGP
@@ -298,10 +294,12 @@ posterior  = PosteriorGP(X = scale(time_selection),
                          hyperParameter = hyperparam)
 
 
-# Compute the variance for f
+## Compute the variance for f
 posterior_variance = posterior$`Predicitive variance`
 posterior_mean = posterior$`Predictive mean`
 posterior_mean = posterior_mean*sd(temperature_selection) + mean(temperature_selection)
+
+
 
 L = posterior_mean - 1.96*sqrt(posterior_variance)
 U = posterior_mean + 1.96*sqrt(posterior_variance)
@@ -309,11 +307,14 @@ U = posterior_mean + 1.96*sqrt(posterior_variance)
 # Plot the meanPred, and the prediction bands for the posterior variance
 plot(time_selection, temperature_selection, main = "Posterior mean",
      ylab = "Temperature", xlab = "Time")
-lines(time_selection, posterior_mean, col = "red", lwd = c(2,2))
-legend("bottomright", legend = c("posterior mean", "prediction bands"),col=c("red", "blue"), 
+polygon(c(time_selection, rev(time_selection)),
+        c(L, rev(U)), col = "darkgray")
+lines(time_selection, posterior_mean, col = "red", lwd = 2)
+legend("bottomright", legend = c("posterior mean", "prediction bands"),col=c("red", "gray"), 
        lty = c(1, 1), lwd = c(2,2))
-lines(time_selection, meanPred + 1.96*sqrt(posterior_variance), col = "blue")
-lines(time_selection, meanPred - 1.96*sqrt(posterior_variance), col = "blue")
+
+
+
 
 
 
@@ -373,9 +374,9 @@ GP_periodic = gausspr(x = time_selection,
 meanPred_periodic = predict(GP_periodic, time_selection)
 
 plot(time_selection, temperature_selection, main = "Posterior mean")
-lines(time_selection, meanPred, col = "red", lwd = 2)
-lines(time_selection, meanPred_day, col = "blue", lwd = 2)
-lines(time_selection, meanPred_periodic, col = "green", lwd = 2)
+lines(time_selection, meanPred, col = "red", lwd = 3)
+lines(time_selection, meanPred_day, col = "blue", lwd = 3)
+lines(time_selection, meanPred_periodic, col = "green", lwd = 3)
 legend("bottomright", legend = c("posterior mean", "day mean", "Periodic mean"),col=c("red", "blue", "green"), lwd = c(2,2))
 
 
