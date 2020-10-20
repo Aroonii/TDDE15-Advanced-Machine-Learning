@@ -90,18 +90,22 @@ x<-age
 xs<-age # XStar.
 n <- length(x)
 Kss <- kernelMatrix(kernel = SEkernel, x = xs, y = xs)
+
 Kxx <- kernelMatrix(kernel = SEkernel, x = x, y = x)
+
+
+
 Kxs <- kernelMatrix(kernel = SEkernel, x = x, y = xs)
-Covf = Kss-t(Kxs)%*%solve(Kxx + sigmaNoise^2*diag(n), Kxs) # Covariance matrix of fStar.
+Covf = Kss - t(Kxs) %*% solve(Kxx + sigmaNoise ^ 2 * diag(n), Kxs) # Covariance matrix of fStar.
 
 # Probability intervals for fStar.
-lines(xs, meanPred - 1.96*sqrt(diag(Covf)), col = "blue", lwd = 2)
-lines(xs, meanPred + 1.96*sqrt(diag(Covf)), col = "blue", lwd = 2)
+lines(xs, meanPred - 1.96 * sqrt(diag(Covf)), col = "blue", lwd = 2)
+lines(xs, meanPred + 1.96 * sqrt(diag(Covf)), col = "blue", lwd = 2)
 
 # Prediction intervals for yStar.
-lines(xs, meanPred - 1.96*sqrt((diag(Covf) + sigmaNoise^2)), col = "blue")
-lines(xs, meanPred + 1.96*sqrt((diag(Covf) + sigmaNoise^2)), col = "blue")
+lines(xs, meanPred - 1.96 * sqrt((diag(Covf) + sigmaNoise ^ 2)), col = "blue")
 
+lines(xs, meanPred + 1.96 * sqrt((diag(Covf) + sigmaNoise ^ 2)), col = "blue")
 
 ###############################################
 ###      Regression on the LIDAR data       ###

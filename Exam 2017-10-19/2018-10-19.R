@@ -94,25 +94,25 @@ querygrain(hc7,c("B"))
 # to solve the problem of finding the fraction of graphs which coincide with the true graph we simply sample new random
 #graphs for the set of noded and see how many of these coincide with the essential graph
 
-essential_graph = cpdag(BN_structure)
-plot(essential_graph)
-
-library(bnlearn)
-set.seed(123)
-ss<-50000
-x<-random.graph(c("A","B","C","D","E"),num=ss,method="melancon",every=50,burn.in=30000)
-
-y = unique(x)
-z = lapply(y, cpdag)
-
-r=0
-
-for(i in 1:length(y)) {
-  if(all.equal(y[[i]],z[[i]])==TRUE){
-    r<-r+1
-  }
-}
-length(y)/r
+#essential_graph = cpdag(BN_structure)
+#plot(essential_graph)
+#
+#library(bnlearn)
+#set.seed(123)
+#ss<-50000
+#x<-random.graph(c("A","B","C","D","E"),num=ss,method="melancon",every=50,burn.in=30000)
+#
+#y = unique(x)
+#z = lapply(y, cpdag)
+#
+#r=0
+#
+#for(i in 1:length(y)) {
+#  if(all.equal(y[[i]],z[[i]])==TRUE){
+#    r<-r+1
+#  }
+#}
+#length(y)/r
 
 # By creating random samples of the graph and comparing if they correspont to the essential graph we can then compute
 # the fraction
@@ -132,6 +132,169 @@ for(i in 1:99){
   transProbs[i,i+1]<-.9
 }
 
-# Varför blir emmission probabilities på detta sättet? Varför blev de som de blev i labben
-Symbols<-1:2 # 1=door
+
+# Symbols accoding to the probabilities we have which differ door/not door
+Symbols<-1:2 
 emissionProbs<-matrix(rep(0,length(States)*length(Symbols)), nrow=length(States), ncol=length(Symbols), byrow = TRUE)
+for(i in States){
+  if(i %in% c(10,11,12,20,21,22,30,31,32)){
+    emissionProbs[i,] = c(0.9, 0.1)
+  }
+  else{
+    emissionProbs[i,] = c(0.1, 0.9)
+  }
+}
+
+# Initialize the hmm 
+hmm<-initHMM(States,Symbols,startProbs,transProbs,emissionProbs)
+
+# Add a unimodal sequence of observations. Observatios are referring to observations of what symbol is present
+# in our case, door/not door. When theo model in this case see a long sequence of only door coming it
+# therefore becomes sure that we must have passed the third doorand therfore continue to guess on segments
+# after the third door
+
+obs<-c(1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2)
+alpha = exp(forward(hmm, obs))
+pt = prop.table(alpha, margin = 2)
+
+which.maxima<-function(x){ # This function is needed since which.max only returns the first maximum.
+  return(which(x==max(x)))
+}
+
+apply(pt,2,which.maxima)
+
+
+
+############################################Assignment 3##################################################
+#library(kernlab)
+#library(mvtnorm)
+#
+## From KernelCode.R: 
+## Squared exponential, k
+#k <- function(sigmaf = 1, ell = 1)  
+#{   
+#  rval <- function(x, y = NULL) 
+#  {       
+#    r = sqrt(crossprod(x-y))       
+#    return(sigmaf^2*exp(-r^2/(2*ell^2)))     
+#  }   
+#  class(rval) <- "kernel"   
+#  return(rval) 
+#}  
+
+
+
+k <- function(sigmaf = 1, ell = 1)  
+{   
+  rval <- function(x, y = NULL) 
+  {       
+    r = sqrt(crossprod(x-y))       
+    return(sigmaf^2*exp(-r^2/(2*ell^2)))     
+  }   
+  class(rval) <- "kernel"   
+  return(rval) 
+}  
+
+
+
+
+### Task a
+# Let f~GP(0, k(x, x')) a priori and simulate 5 realizations from the prior distribution
+# of f over the grid. We can solve this problem since we know the distribution
+# of the resulting f* which will be multivariate nromally distributed with
+# mean =  0 and sigma = k(x, x')
+
+xGrid = seq(-1,1,0.1)
+
+#Create the kernel for computing the covariance
+# Simulating from the prior for ell = 0.2
+kernel02 <- k(sigmaf = 1, ell = 0.2) # This constructs the covariance function
+xGrid = seq(-1,1,by=0.1) 
+# Compute the covariance matrix. Is necessary to do it this way since the 
+# squared exponetial kernel in this case does not return a matrix
+K = kernelMatrix(kernel = kernel02, xGrid, xGrid)
+
+colors = list("black","red","blue","green","purple")
+f = rmvnorm(n = 1, mean = rep(0,length(xGrid)), sigma = K)
+plot(xGrid,f, type = "l", ylim = c(-3,3), col = colors[[1]])
+for (i in 1:4){
+  f = rmvnorm(n = 1, mean = rep(0,length(xGrid)), sigma = K)
+  lines(xGrid,f, col = colors[[i+1]])
+}
+
+# Simulating from the prior for ell = 1
+kernel1 <- k(sigmaf = 1, ell = 1) # This constructs the covariance function
+xGrid = seq(-1,1,by=0.1) 
+K = kernelMatrix(kernel = kernel1, xGrid, xGrid)
+
+colors = list("black","red","blue","green","purple")
+f = rmvnorm(n = 1, mean = rep(0,length(xGrid)), sigma = K)
+plot(xGrid,f, type = "l", ylim = c(-3,3), col = colors[[1]])
+for (i in 1:4){
+  f = rmvnorm(n = 1, mean = rep(0,length(xGrid)), sigma = K)
+  lines(xGrid,f, col = colors[[i+1]])
+}
+
+
+# compute the corr(f(0), f(0.1)) and corr(f(0), f(0.5)). This is the same 
+# as computing the correlation between the input values for where f is evaluated
+# l = 0.2
+# kernel0.2
+kernel02(0, 0.1)
+kernel02(0, 0.5)
+
+
+# l = 1
+kernel1(0, 0.1)
+kernel1(0, 0.5)
+
+# Since we are using a sigmaf = 1 the correlation will be the same as the
+# the covariance. Comparing the two scenarios the 2 points which are further
+# away will have less correlation. When l is larges the decrease in correlation
+# due to distance will not decac as rapidly. 
+
+
+### Question 3b
+
+# Compute the posterior distribution of f in the model 
+# y ~ f(x) + epsilon, epsilon ~ N(0, 0.2^2)
+load("GPdata.RData")
+
+### ell = 0.2
+
+sigmaNoise = 0.2
+
+# Set up the kernel function
+kernelFunc <- k(sigmaf = 1, ell = 0.2)
+
+# Plot the data and the true 
+plot(x, y, main = "", cex = 0.5)
+
+GPfit <- gausspr(x, y, kernel = kernelFunc, var = sigmaNoise^2)
+# Alternative: GPfit <- gausspr(y ~ x, kernel = k, kpar = list(sigmaf = 1, ell = 0.2), var = sigmaNoise^2)
+xs = seq(min(x),max(x), length.out = 100)
+meanPred <- predict(GPfit, data.frame(x = xs)) # Predicting the training data. To plot the fit.
+lines(xs, meanPred, col="blue", lwd = 2)
+
+# Compute the covariance matrix Cov(f)
+n <- length(x)
+Kss <- kernelMatrix(kernel = kernelFunc, x = xs, y = xs)
+Kxx <- kernelMatrix(kernel = kernelFunc, x = x, y = x)
+Kxs <- kernelMatrix(kernel = kernelFunc, x = x, y = xs)
+Covf = Kss-t(Kxs)%*%solve(Kxx + sigmaNoise^2*diag(n), Kxs)
+
+# Probability intervals for f
+lines(xs, meanPred - 1.96*sqrt(diag(Covf)), col = "red")
+lines(xs, meanPred + 1.96*sqrt(diag(Covf)), col = "red")
+
+# Prediction intervals for y 
+lines(xs, meanPred - 1.96*sqrt((diag(Covf) + sigmaNoise^2)), col = "purple")
+lines(xs, meanPred + 1.96*sqrt((diag(Covf) + sigmaNoise^2)), col = "purple")
+
+
+legend("topright", inset = 0.02, legend = c("data","post mean","95% intervals for f", "95% predictive intervals for y"), 
+       col = c("black", "blue", "red", "purple"), 
+       pch = c('o',NA,NA,NA), lty = c(NA,1,1,1), lwd = 2, cex = 0.55)
+
+
+

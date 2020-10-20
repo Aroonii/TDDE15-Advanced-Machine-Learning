@@ -1,10 +1,10 @@
-#Install the necessary 
-if (!requireNamespace("BiocManager", quietly = TRUE))
-install.packages("BiocManager")
-install.packages("bnlearn")
-BiocManager::install("RBGL")
-BiocManager::install("Rgraphviz")
-BiocManager::install("gRain")
+##Install the necessary 
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#install.packages("BiocManager")
+#install.packages("bnlearn")
+#BiocManager::install("RBGL")
+#BiocManager::install("Rgraphviz")
+#BiocManager::install("gRain")
 library(bnlearn)
 library(gRain)
 

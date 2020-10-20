@@ -257,6 +257,7 @@ SquaredExpKernel <- function(x1,x2,sigmaF=1,l=3){
   return(K)
 }
 
+
 PosteriorGP = function(X, y, XStar, sigmaNoise, hyperParameter){
   
   n = length(X)
@@ -293,9 +294,15 @@ posterior  = PosteriorGP(X = scale(time_selection),
                          sigmaNoise = sigmaNoise,
                          hyperParameter = hyperparam)
 
-
+#posterior  = PosteriorGP(X = time_selection,
+#                         y = temperature_selection,
+#                         XStar = time_selection,
+#                         sigmaNoise = sigmaNoise,
+#                         hyperParameter = hyperparam)
+#
 ## Compute the variance for f
 posterior_variance = posterior$`Predicitive variance`
+#posterior_variance = posterior_variance*sd(temperature_selection)
 posterior_mean = posterior$`Predictive mean`
 posterior_mean = posterior_mean*sd(temperature_selection) + mean(temperature_selection)
 
@@ -306,9 +313,10 @@ U = posterior_mean + 1.96*sqrt(posterior_variance)
 
 # Plot the meanPred, and the prediction bands for the posterior variance
 plot(time_selection, temperature_selection, main = "Posterior mean",
-     ylab = "Temperature", xlab = "Time")
+     ylab = "Temperature", xlab = "Time", type = "p")
 polygon(c(time_selection, rev(time_selection)),
         c(L, rev(U)), col = "darkgray")
+points(time_selection, temperature_selection, type = "p")
 lines(time_selection, posterior_mean, col = "red", lwd = 2)
 legend("bottomright", legend = c("posterior mean", "prediction bands"),col=c("red", "gray"), 
        lty = c(1, 1), lwd = c(2,2))
