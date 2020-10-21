@@ -212,7 +212,8 @@ sigmaf = 20
 ell = 0.2
 
 # Fit quadratic regression with the scaled data
-regression_fit = lm(temperature_selection ~ time_selection + I(time_selection)^2)
+#regression_fit = lm(temperature_selection ~ scale(time_selection) + I(time_selection)^2)
+regression_fit = lm(scale(temperature_selection) ~ scale(time_selection) + I(time_selection)^2)
 
 #Compute the residual variance
 sigmaNoise = sd(regression_fit$residuals)
@@ -240,7 +241,7 @@ legend("bottomright", legend = c("posterior mean", "observations"),col=c("red", 
 
 ### 2.3
 # Make own computations to obtain the posterior variance of f and plot the
-# 95 % probability bands for f. To do this we can use the prviously computed
+# 95 % probability bands for f. To do this we can use the previously computed
 # function PosteriorGP
 
 sigmaf = 20
@@ -294,19 +295,12 @@ posterior  = PosteriorGP(X = scale(time_selection),
                          sigmaNoise = sigmaNoise,
                          hyperParameter = hyperparam)
 
-#posterior  = PosteriorGP(X = time_selection,
-#                         y = temperature_selection,
-#                         XStar = time_selection,
-#                         sigmaNoise = sigmaNoise,
-#                         hyperParameter = hyperparam)
-#
+
 ## Compute the variance for f
 posterior_variance = posterior$`Predicitive variance`
-#posterior_variance = posterior_variance*sd(temperature_selection)
+posterior_variance = posterior_variance*sd(temperature_selection)^2
 posterior_mean = posterior$`Predictive mean`
 posterior_mean = posterior_mean*sd(temperature_selection) + mean(temperature_selection)
-
-
 
 L = posterior_mean - 1.96*sqrt(posterior_variance)
 U = posterior_mean + 1.96*sqrt(posterior_variance)
@@ -320,12 +314,6 @@ points(time_selection, temperature_selection, type = "p")
 lines(time_selection, posterior_mean, col = "red", lwd = 2)
 legend("bottomright", legend = c("posterior mean", "prediction bands"),col=c("red", "gray"), 
        lty = c(1, 1), lwd = c(2,2))
-
-
-
-
-
-
 
 
 

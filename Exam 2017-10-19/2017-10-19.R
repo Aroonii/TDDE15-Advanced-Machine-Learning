@@ -86,34 +86,32 @@ querygrain(hc7,c("B"))
 # probability for B. This implies that B is independent from E and that d-separation is present.
 
 
-##################################Assignemt 1 Part 2###############################################################
+### Assignment 1 Part 2
 
 #Compute approximately the fraction of the DAGs that are essential. An essential DAG is a DAG which is not Markov
 #equivalent  to any other DAG. 
 
 # to solve the problem of finding the fraction of graphs which coincide with the true graph we simply sample new random
 #graphs for the set of noded and see how many of these coincide with the essential graph
+essential_graph = cpdag(BN_structure)
+plot(essential_graph)
 
-#essential_graph = cpdag(BN_structure)
-#plot(essential_graph)
-#
-#library(bnlearn)
-#set.seed(123)
-#ss<-50000
-#x<-random.graph(c("A","B","C","D","E"),num=ss,method="melancon",every=50,burn.in=30000)
-#
-#y = unique(x)
-#z = lapply(y, cpdag)
-#
-#r=0
-#
-#for(i in 1:length(y)) {
-#  if(all.equal(y[[i]],z[[i]])==TRUE){
-#    r<-r+1
-#  }
-#}
-#length(y)/r
+library(bnlearn)
+set.seed(123)
+ss<-50000
+x<-random.graph(c("A","B","C","D","E"),num=ss,method="melancon",every=50,burn.in=30000)
 
+y = unique(x)
+z = lapply(y, cpdag)
+
+r=0
+
+for(i in 1:length(y)) {
+  if(all.equal(y[[i]],z[[i]])==TRUE){
+    r<-r+1
+  }
+}
+length(y)/r
 # By creating random samples of the graph and comparing if they correspont to the essential graph we can then compute
 # the fraction
 ##################??? varför length(y)/r?
@@ -125,13 +123,16 @@ querygrain(hc7,c("B"))
 #install.packages("HMM")
 library(HMM)
 startprobs = rep(1/100, 100)
-States = 1:100
+States<-1:100
+Symbols<-1:2 # 1=door
+
 transProbs<-matrix(rep(0,length(States)*length(States)), nrow=length(States), ncol=length(States), byrow = TRUE)
 for(i in 1:99){
   transProbs[i,i]<-.1
   transProbs[i,i+1]<-.9
 }
-
+transProbs[100,100] = 0.1
+transProbs[100,1] = 0.9
 
 # Symbols accoding to the probabilities we have which differ door/not door
 Symbols<-1:2 
@@ -166,22 +167,10 @@ apply(pt,2,which.maxima)
 
 
 ############################################Assignment 3##################################################
-#library(kernlab)
-#library(mvtnorm)
-#
-## From KernelCode.R: 
-## Squared exponential, k
-#k <- function(sigmaf = 1, ell = 1)  
-#{   
-#  rval <- function(x, y = NULL) 
-#  {       
-#    r = sqrt(crossprod(x-y))       
-#    return(sigmaf^2*exp(-r^2/(2*ell^2)))     
-#  }   
-#  class(rval) <- "kernel"   
-#  return(rval) 
-#}  
+#### GPRegression
 
+library(kernlab)
+library(mvtnorm)
 
 
 k <- function(sigmaf = 1, ell = 1)  
@@ -194,9 +183,6 @@ k <- function(sigmaf = 1, ell = 1)
   class(rval) <- "kernel"   
   return(rval) 
 }  
-
-
-
 
 ### Task a
 # Let f~GP(0, k(x, x')) a priori and simulate 5 realizations from the prior distribution
@@ -235,7 +221,7 @@ for (i in 1:4){
   lines(xGrid,f, col = colors[[i+1]])
 }
 
-
+# f(x) = kx + m + epsilon
 # compute the corr(f(0), f(0.1)) and corr(f(0), f(0.5)). This is the same 
 # as computing the correlation between the input values for where f is evaluated
 # l = 0.2
@@ -272,6 +258,7 @@ plot(x, y, main = "", cex = 0.5)
 
 GPfit <- gausspr(x, y, kernel = kernelFunc, var = sigmaNoise^2)
 # Alternative: GPfit <- gausspr(y ~ x, kernel = k, kpar = list(sigmaf = 1, ell = 0.2), var = sigmaNoise^2)
+#Since x is not ordered we order xs according to its size.
 xs = seq(min(x),max(x), length.out = 100)
 meanPred <- predict(GPfit, data.frame(x = xs)) # Predicting the training data. To plot the fit.
 lines(xs, meanPred, col="blue", lwd = 2)
@@ -290,7 +277,6 @@ lines(xs, meanPred + 1.96*sqrt(diag(Covf)), col = "red")
 # Prediction intervals for y 
 lines(xs, meanPred - 1.96*sqrt((diag(Covf) + sigmaNoise^2)), col = "purple")
 lines(xs, meanPred + 1.96*sqrt((diag(Covf) + sigmaNoise^2)), col = "purple")
-
 
 legend("topright", inset = 0.02, legend = c("data","post mean","95% intervals for f", "95% predictive intervals for y"), 
        col = c("black", "blue", "red", "purple"), 
