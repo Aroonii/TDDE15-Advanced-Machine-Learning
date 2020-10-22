@@ -295,6 +295,36 @@ posterior  = PosteriorGP(X = scale(time_selection),
                          sigmaNoise = sigmaNoise,
                          hyperParameter = hyperparam)
 
+# time_selection = scale(time_selection)
+# posterior  = PosteriorGP(X = time_selection,
+#                          y = temperature_selection,
+#                          XStar = time_selection,
+#                          sigmaNoise = sigmaNoise,
+#                          hyperParameter = hyperparam)
+
+###################3
+# k <- function(sigmaf = 1, ell = 1)  
+# {   
+#   rval <- function(x, y = NULL) 
+#   {       
+#     r = sqrt(crossprod(x-y))       
+#     return(sigmaf^2*exp(-r^2/(2*ell^2)))     
+#   }   
+#   class(rval) <- "kernel"   
+#   return(rval) 
+# }  
+# GPPosterior = function(x, y, xs,kernel,...){
+#   k = kernel(...)
+#   n <- length(x)
+#   Kss <- kernelMatrix(kernel = k, x = xs, y = xs)
+#   Kxx <- kernelMatrix(kernel = k, x = x, y = x)
+#   Kxs <- kernelMatrix(kernel = k, x = x, y = xs)
+#   Covf = Kss-t(Kxs)%*%solve(Kxx + 0.05^2*diag(n), Kxs)
+#   return(diag(Covf))
+# }
+# 
+# 
+# var = GPPosterior(time_selection, temperature_selection, time_selection, k, 20,  0.2)
 
 ## Compute the variance for f
 posterior_variance = posterior$`Predicitive variance`
@@ -308,6 +338,8 @@ U = posterior_mean + 1.96*sqrt(posterior_variance)
 # Plot the meanPred, and the prediction bands for the posterior variance
 plot(time_selection, temperature_selection, main = "Posterior mean",
      ylab = "Temperature", xlab = "Time", type = "p")
+# lines(time_selection, posterior_mean)
+# lines(time_selection, posterior_mean + 1.96*(sqrt(posterior_variance)))
 polygon(c(time_selection, rev(time_selection)),
         c(L, rev(U)), col = "darkgray")
 points(time_selection, temperature_selection, type = "p")
