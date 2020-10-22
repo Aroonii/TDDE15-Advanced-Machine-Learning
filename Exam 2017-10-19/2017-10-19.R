@@ -148,6 +148,7 @@ for(i in States){
 
 # Initialize the hmm 
 hmm<-initHMM(States,Symbols,startProbs,transProbs,emissionProbs)
+sim = simHMM(hmm, 100)
 
 # Add a unimodal sequence of observations. Observatios are referring to observations of what symbol is present
 # in our case, door/not door. When theo model in this case see a long sequence of only door coming it
