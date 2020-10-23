@@ -227,8 +227,7 @@ GP_fit = gausspr(x = time_selection,
                  kernel = SE_Kernel(sigmaF = sigmaf, l = ell),
                  var = sigmaNoise^2)
 
-#Compute the posterior mean at every data point in the training
-# dataset
+#Compute the posterior mean at every data point in the training dataset
 meanPred = predict(GP_fit, time_selection)
 
 plot(time_selection, temperature_selection, main = "Posterior mean",
@@ -338,8 +337,6 @@ U = posterior_mean + 1.96*sqrt(posterior_variance)
 # Plot the meanPred, and the prediction bands for the posterior variance
 plot(time_selection, temperature_selection, main = "Posterior mean",
      ylab = "Temperature", xlab = "Time", type = "p")
-# lines(time_selection, posterior_mean)
-# lines(time_selection, posterior_mean + 1.96*(sqrt(posterior_variance)))
 polygon(c(time_selection, rev(time_selection)),
         c(L, rev(U)), col = "darkgray")
 points(time_selection, temperature_selection, type = "p")

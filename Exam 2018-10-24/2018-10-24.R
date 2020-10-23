@@ -277,7 +277,6 @@ Kxx <- kernelMatrix(kernel = matern, x = x, y = x)
 Kxs <- kernelMatrix(kernel = matern, x = x, y = xs)
 Covf = Kss-t(Kxs)%*%solve(Kxx + 0.05^2*diag(n), Kxs) # Covariance matrix of fStar.
 
-
 # Probability intervals for fStar.
 lines(xs, predMean - 1.96*sqrt(diag(Covf)), col = "blue", lwd = 2)
 lines(xs, predMean + 1.96*sqrt(diag(Covf)), col = "blue", lwd = 2)
@@ -294,12 +293,21 @@ GPPosterior = function(x, y, xs,kernel,...){
   Kss <- kernelMatrix(kernel = k, x = xs, y = xs)
   Kxx <- kernelMatrix(kernel = k, x = x, y = x)
   Kxs <- kernelMatrix(kernel = k, x = x, y = xs)
+  meanf = t(Kxs) %*% solve(Kxx + 0.05^2*diag(n), y) 
   Covf = Kss-t(Kxs)%*%solve(Kxx + 0.05^2*diag(n), Kxs)
-  return(diag(Covf))
+  return(list(meanf = meanf, var = diag(Covf)))
 }
 
 # Do we have to scale or not ????
-var = GPPosterior(scale(x), scale(y), scale(xs), Matern32, 1, 1)
+GP = GPPosterior(scale(x), scale(y), scale(xs), Matern32, 1, 1)
+GP = GPPosterior(x, y, xs, Matern32, 1, 1)
+var = GP$var
+mean = GP$meanf
+lines(xs, mean*sd(y) + mean(y), col = "blue")
+lines(xs, predMean, col = "red")
+lines(xs, predMean + 1.96*sqrt(var*sd(y)^2))
+lines(xs, predMean - 1.96*sqrt(var*sd(y)^2))
+
 lines(xs, predMean + 1.96*sqrt(var*sd(LogRatio^2)))
 lines(xs, predMean - 1.96*sqrt(var*sd(LogRatio^2)))
 

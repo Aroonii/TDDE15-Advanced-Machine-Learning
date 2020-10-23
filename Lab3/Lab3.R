@@ -170,8 +170,9 @@ q_learning <- function(start_state, epsilon = 0.5, alpha = 0.1, gamma = 0.95,
     
     #Temporal difference = R + γ maxQ(S′, a) − Q(S, A) 
     # Q-table update.
-    temporal_difference=temporal_difference  + reward+gamma*max(q_table[new_state[1], new_state[2],])
-    q_table[x,y,action] <<- q_table[x,y,action] + alpha*(reward + gamma*max(q_table[new_state[1], new_state[2],]) - q_table[x,y,action])
+    temporal_difference=temporal_difference  + reward + gamma*max(q_table[new_state[1], new_state[2],]) - q_table[x,y,action]
+    correction = alpha*(reward+gamma*max(q_table[new_state[1], new_state[2],])-q_table[x,y,action])
+    q_table[x,y,action] <<- q_table[x,y,action] + correction
     
     #Update the state coordinates
     Qstate=new_state
