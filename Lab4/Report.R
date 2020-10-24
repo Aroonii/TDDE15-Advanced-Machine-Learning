@@ -294,36 +294,37 @@ posterior  = PosteriorGP(X = scale(time_selection),
                          sigmaNoise = sigmaNoise,
                          hyperParameter = hyperparam)
 
-# time_selection = scale(time_selection)
-# posterior  = PosteriorGP(X = time_selection,
-#                          y = temperature_selection,
-#                          XStar = time_selection,
-#                          sigmaNoise = sigmaNoise,
-#                          hyperParameter = hyperparam)
+time_selection = scale(time_selection)
+posterior  = PosteriorGP(X = time_selection,
+                         y = temperature_selection,
+                         XStar = time_selection,
+                         sigmaNoise = sigmaNoise,
+                         hyperParameter = hyperparam)
 
-###################3
-# k <- function(sigmaf = 1, ell = 1)  
-# {   
-#   rval <- function(x, y = NULL) 
-#   {       
-#     r = sqrt(crossprod(x-y))       
-#     return(sigmaf^2*exp(-r^2/(2*ell^2)))     
-#   }   
-#   class(rval) <- "kernel"   
-#   return(rval) 
-# }  
-# GPPosterior = function(x, y, xs,kernel,...){
-#   k = kernel(...)
-#   n <- length(x)
-#   Kss <- kernelMatrix(kernel = k, x = xs, y = xs)
-#   Kxx <- kernelMatrix(kernel = k, x = x, y = x)
-#   Kxs <- kernelMatrix(kernel = k, x = x, y = xs)
-#   Covf = Kss-t(Kxs)%*%solve(Kxx + 0.05^2*diag(n), Kxs)
-#   return(diag(Covf))
-# }
-# 
-# 
-# var = GPPosterior(time_selection, temperature_selection, time_selection, k, 20,  0.2)
+##################3
+k <- function(sigmaf = 1, ell = 1)
+{
+  rval <- function(x, y = NULL)
+  {
+    r = sqrt(crossprod(x-y))
+    return(sigmaf^2*exp(-r^2/(2*ell^2)))
+  }
+  class(rval) <- "kernel"
+  return(rval)
+}
+GPPosterior = function(x, y, xs, sigmaNoise, kernel,...){
+  k = kernel(...)
+  n <- length(x)
+  Kss <- kernelMatrix(kernel = k, x = xs, y = xs)
+  Kxx <- kernelMatrix(kernel = k, x = x, y = x)
+  Kxs <- kernelMatrix(kernel = k, x = x, y = xs)
+  Covf = Kss-t(Kxs)%*%solve(Kxx + sigmaNoise^2*diag(n), Kxs)
+  return(diag(Covf))
+}
+
+
+#var = GPPosterior(time_selection, temperature_selection, time_selection, k, 20,  0.2)
+#var = GPPosterior(scale(time_selection), scale(temperature_selection), scale(time_selection), k, 20,  0.2)
 
 ## Compute the variance for f
 posterior_variance = posterior$`Predicitive variance`
@@ -453,8 +454,75 @@ accuracy = mean(test_prediction == test$fraud)
 accuracy
 
 ### Part 3.3
-GP.fit_all = gausspr(fraud ~ ., data = train)
+GP.fit_all = gausspr(fraud ~ ., data = train, kernel = "rbfdot", kpar = 'automatic')
 test_prediction_all = predict(GP.fit_all, test, type = "response")
 accuracy_all = mean(test_prediction_all == test$fraud)
 accuracy_all
 
+
+
+
+
+
+## Selecting hyperparameters via cross validation
+
+#800 points for training, 200 points for validation and the rest for test
+set.seed(111)
+selectTraining = sample(1:dim(data)[1], size = 1000, replace = FALSE)
+y = data[,5] #predictor
+x = as.matrix(data[,1:4]) # covariates
+yTrain = y[selectTraining]
+yTest = y[-selectTraining]
+xTrain = x[selectTraining,]
+xTest = x[-selectTraining,]
+#From the training data use 200 points for validation
+selectVal = sample(1:1000, size = 200, replace = FALSE)
+yVal = yTrain[selectVal]
+xVal = xTrain[selectVal,]
+yTrain = yTrain[-selectVal]
+xTrain = xTrain[-selectVal,]
+
+
+#function for computing the accuracy, the correctly classified points
+# funciton has 1 input parameter whihc is the input for the rbfdot kernel
+acVal = function(par = c(0.1)){
+  GP.fit_fraud = gausspr(x = xTrain, y = yTrain, kernel = "rbfdot", kpar = list(sigma=par[1]))
+  predVal = predict(GP.fit_fraud, xVal)
+  table(predVal, yVal)
+  accuracyVal = sum(predVal == yVal)/length(yVal)
+  return(accuracyVal)
+}
+
+selVars = c(1,2,3,4)
+GP.fit_fraud = gausspr(x = xTrain, y = yTrain, kernel = "rbfdot", kpar = 'automatic', scaled = FALSE, type = "classification")
+GP.fit_fraud
+predVal = predict(GP.fit_fraud, xVal)
+table(predVal, yVal)
+accuracyVal = mean(predVal == yVal)
+
+
+#GridSearch for classification problem
+bestVal = accuracyVal
+for ( j in seq(0.1, 10, 0.1)){
+  accuracy = acVal(j)
+  if(bestVal < accuracy){
+    bestVal = accuracy
+    bestJ = j
+  } 
+}
+
+GP.fit_fraud = gausspr(x = xTrain[,selVars], y = yTrain, kernel = "rbfdot", kpar = list(sigma=bestJ))
+predTest = predict(GP.fit_fraud, xTest[,selVars])
+table(predTest, yTest)
+mean(predTest == yTest)
+
+
+
+## Alternative solution using optim
+foo = optim(par = c(0.1), fn = acVal, method = "L-BFGS-B", lower = c(.Machine$double.eps), control = list(fnscale=-1))
+acVal(foo$par)
+
+GP.fit_fraud = gausspr(x = xTrain[,selVars], y = yTrain, kernel = "rbfdot", kpar = list(sigma=foo$par))
+predTest = predict(GP.fit_fraud, xTest[,selVars])
+table(predTest, yTest)
+mean(predTest == yTest)

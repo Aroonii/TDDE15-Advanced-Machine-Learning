@@ -86,7 +86,7 @@ GreedyPolicy <- function(x, y){
   }
 }
 
-EpsilonGreedyPolicy <- function(x, y, epsilon){
+EpsilonGreedyPolicy <- function(x, y, epsilon){ 
   
   # Get an epsilon-greedy action for state (x,y) from q_table.
   #
