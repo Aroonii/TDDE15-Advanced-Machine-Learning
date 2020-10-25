@@ -150,12 +150,14 @@ querygrain(junction_tree)
 # Make predictin on the test data 
 
 predict_test = function(BN_model, testData, observation_nodes, prediction_variable){
-  prediction = rep(0, length(testData)) 
- for(i in 1:nrow(testData)){
-   node_state = NULL
-   for (k in observation_nodes){
-     node_state[k] = if(testData[i,k] == "yes") "yes" else "no"
-   }
+  prediction = rep(0, length(testData))
+  featureData = testData[,c(observation_nodes)]
+   for(i in 1:nrow(testData)){
+   node_state = t(featureData[i,])
+   #for (k in observation_nodes){
+   #  node_state[k] = if(testData[i,k] == "yes") "yes" else "no"
+   #}
+   
    
    #Assign the new data points for each observation to a node
    # observation nodes should be all the nodes except the conditional node we are doing inference on

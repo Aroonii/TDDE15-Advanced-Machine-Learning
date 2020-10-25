@@ -8,10 +8,23 @@
 library(bnlearn)
 library(gRain)
 
+predict_test = function(BN_model, testData, observation_nodes, prediction_variable){
+  prediction = rep(0, length(testData))
+  featureData = testData[,c(observation_nodes)]
+  for(i in 1:nrow(testData)){
+    node_state = t(featureData[i,])
 
-
-
-
+    evidence = setEvidence(object = BN_model, 
+                           nodes = observation_nodes,
+                           states = node_state)
+    
+    conditional_distribution = querygrain(object = evidence, 
+                                          nodes = prediction_variable)$S
+    
+    prediction[i] = if(conditional_distribution["yes"] > 0.5) "yes" else "no"
+  } 
+  return(prediction)
+}
 
 
 set.seed(567)
@@ -287,29 +300,32 @@ lines(xs, predMean + 1.96*sqrt(diag(Covf) + 0.05^2), col = "orange", lwd = 2)
 
 ###########################
 
-GPPosterior = function(x, y, xs,kernel,...){
+GPPosterior = function(x, y, xs, sigma, kernel,...){
   k = kernel(...)
   n <- length(x)
   Kss <- kernelMatrix(kernel = k, x = xs, y = xs)
   Kxx <- kernelMatrix(kernel = k, x = x, y = x)
   Kxs <- kernelMatrix(kernel = k, x = x, y = xs)
-  meanf = t(Kxs) %*% solve(Kxx + 0.05^2*diag(n), y) 
-  Covf = Kss-t(Kxs)%*%solve(Kxx + 0.05^2*diag(n), Kxs)
+  meanf = t(Kxs) %*% solve(Kxx + sigma^2*diag(n), y) 
+  Covf = Kss-t(Kxs)%*%solve(Kxx + sigma^2*diag(n), Kxs)
   return(list(meanf = meanf, var = diag(Covf)))
 }
 
-# Do we have to scale or not ????
-GP = GPPosterior(scale(x), scale(y), scale(xs), Matern32, 1, 1)
-GP = GPPosterior(x, y, xs, Matern32, 1, 1)
+plot(Distance, LogRatio)
+lines(xs, predMean, col = "red", lwd = 2)
+
+sigma = 0.05
+GP = GPPosterior(scale(x), scale(y), scale(xs),sigma/sd(LogRatio)^2, Matern32, 1, 1)
+# GP = GPPosterior(x, y, xs, sigma, Matern32, 1, 1)
 var = GP$var
 mean = GP$meanf
-lines(xs, mean*sd(y) + mean(y), col = "blue")
-lines(xs, predMean, col = "red")
-lines(xs, predMean + 1.96*sqrt(var*sd(y)^2))
-lines(xs, predMean - 1.96*sqrt(var*sd(y)^2))
+var = var*sd(LogRatio)^2
+mean = mean*sd(LogRatio) + mean(LogRatio)
 
-lines(xs, predMean + 1.96*sqrt(var*sd(LogRatio^2)))
-lines(xs, predMean - 1.96*sqrt(var*sd(LogRatio^2)))
+lines(xs, mean, col = "blue")
+lines(xs, predMean, col = "red")
+lines(xs, predMean + 1.96*sqrt(var))
+lines(xs, predMean - 1.96*sqrt(var))
 
 lines(xs, predMean + 1.96*sqrt(var*sd(LogRatio^2) + 0.05^2))
 lines(xs, predMean - 1.96*sqrt(var*sd(LogRatio^2) + 0.05^2))

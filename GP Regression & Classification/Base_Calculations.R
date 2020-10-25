@@ -125,7 +125,7 @@ PosteriorGP = function(X, y, XStar, sigmaNoise, k){
   mean = t(kStar)%*%a
   v = solve(L, kStar)
   var = k(XStar, XStar) - (t(v)%*%v)
-  logmar -0.5*(t(y)%*%a)-sum(diag(L)) - (n/2)*log(2*pi)
+  logmar = -0.5*(t(y)%*%a)-sum(diag(L)) - (n/2)*log(2*pi)
   return(list("mean" = mean, "var" = var, "logmar" = logmar))
 }
 
@@ -137,7 +137,8 @@ LM = function(X, y, sigmaNoise, k,...){
   n = length(X)
   L = t(chol(k(X,X) + ((sigmaNoise^2)*diag(n))))
   a = solve(t(L), solve(L,y))
-  logmar -0.5*(t(y)%*%a)-sum(diag(L)) - (n/2)*log(2*pi)
+  logmar =  -0.5*(t(y)%*%a)-sum(diag(L)) - (n/2)*log(2*pi)
+  return(logmar)
 }
 
 bestLM = LM(X = scale(X), y = scale(y), sigmaNoise = sigmaNoise, k = SEkernel, par = c(20,0.2))
