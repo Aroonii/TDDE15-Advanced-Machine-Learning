@@ -31,23 +31,21 @@ Kxx <- kernelMatrix(kernel = kernelFunc, x = x, y = x)
 Kxs <- kernelMatrix(kernel = kernelFunc, x = x, y = xs)
 Covf = Kss-t(Kxs)%*%solve(Kxx + sigmaNoise^2*diag(n), Kxs)
 
+#If sigma is given we should also scale this
+GP = GPPosterior(scale(x), scale(y), scale(xs),sigma/sd(LogRatio)^2, Matern32, 1, 1)
+# GP = GPPosterior(x, y, xs, sigma, Matern32, 1, 1)
+var = GP$var
+mean = GP$meanf
+var = var*sd(LogRatio)^2
+mean = mean*sd(LogRatio) + mean(LogRatio)
 
+lines(xs, mean, col = "blue")
+lines(xs, predMean, col = "red")
+lines(xs, predMean + 1.96*sqrt(var))
+lines(xs, predMean - 1.96*sqrt(var))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+lines(xs, predMean + 1.96*sqrt(var*sd(LogRatio^2) + sigmaNoise^2))
+lines(xs, predMean - 1.96*sqrt(var*sd(LogRatio^2) + sigmaNoise^2))
 
 ###########################Hyperparameter Learning por Classification Problem#######################################################
 #Split data into train, validation and Test
@@ -71,6 +69,7 @@ xTrain = xTrain[-selectVal,]
 
 #function for computing the accuracy, the correctly classified points
 # funciton has 1 input parameter whihc is the input for the rbfdot kernel
+# This is computing the accuracy by using the train and validation data
 acVal = function(par = c(0.1)){
   GP.fit_fraud = gausspr(x = xTrain, y = yTrain, kernel = "rbfdot", kpar = list(sigma=par[1]))
   predVal = predict(GP.fit_fraud, xVal)
@@ -132,22 +131,41 @@ PosteriorGP = function(X, y, XStar, sigmaNoise, k){
 #Only the logmarginal part of algorithm 2.1 and finding the best hyperparameter
 #Could alternatively also include sigma as a search parameter and same for choice of kernel. Want to choose the one which maximizes the
 #marginal likelihood
-LM = function(X, y, sigmaNoise, k,...){
-  k = k(...)
-  n = length(X)
-  L = t(chol(k(X,X) + ((sigmaNoise^2)*diag(n))))
-  a = solve(t(L), solve(L,y))
-  logmar =  -0.5*(t(y)%*%a)-sum(diag(L)) - (n/2)*log(2*pi)
+
+LM <- function(par=c(20,0.2),X,y,k,sigmaNoise){
+  n <- length(y)
+  L <- t(chol(k(par,X,X)+((sigmaNoise^2)*diag(n))))
+  a <- solve(t(L),solve(L,y))
+  logmar <- -0.5*(t(y)%*%a)-sum(diag(L))-(n/2)*log(2*pi)
   return(logmar)
 }
 
-bestLM = LM(X = scale(X), y = scale(y), sigmaNoise = sigmaNoise, k = SEkernel, par = c(20,0.2))
-bestLMs
+SEKernel2 <- function(par=c(20,0.2),x1,x2){
+  n1 <- length(x1)
+  n2 <- length(x2)
+  K <- matrix(NA,n1,n2)
+  for (i in 1:n2){
+    K[,i] <- (par[1]^2)*exp(-0.5*( (x1-x2[i])/par[2])^2 )
+  }
+  return(K)
+}
+
+regression_fit = lm(scale(y) ~ scale(x) + I(x)^2)
+sigmaNoise = sd(regression_fit$residuals)
+
+foo<-optim(par = c(1,0.1), fn = LM, X=scale(x),y=scale(y),k=SEKernel2,sigmaNoise=sigmaNoise, method="L-BFGS-B",
+           lower = c(.Machine$double.eps, .Machine$double.eps),control=list(fnscale=-1))
+
+foo$par
+
+###############################Using grid search###############################################
+bestLM = LM(par = c(20,0.2), X = scale(x), y = scale(y), k = SEKernel2, sigmaNoise)
+bestLM
 besti = 20
 bestj = 0.2
 for(i in seq(1,50,1)){
   for(j in seq(0.1,10,0.1)){
-    accuracy = LM(X = scale(X), y = scale(y), sigmaNoise = sigmaNoise, k = SEkernel, par = c(i,j))
+    accuracy = LM(par = c(i,j), X = scale(x), y = scale(y), k = SEKernel2, sigmaNoise = sigmaNoise)
     if(bestLM < accuracy){
       bestLM = accuracy
       besti = i
@@ -156,6 +174,6 @@ for(i in seq(1,50,1)){
   }
 }
 
-#Alternatively using optim
-foo = optim(par = c(1,0.1), fn = LM, X = scale(x), y = scale(y), sigmaNoise = sigmaNoise, k = SEkernel,
-            method = "L-BFGS-B",lower = c(.Machine$double.eps, .Machine$double.eps), control = list(fnscale = -1))
+bestLM
+besti
+bestJ

@@ -139,76 +139,134 @@ smoothed
 tempData = read.csv("https://github.com/STIMALiU/AdvMLCourse/raw/master/GaussianProcess/
 Code/TempTullinge.csv", header=TRUE, sep=";")
 
-x = tempData$date
+
 y = tempData$temp
+x = 1:length(y)
 
-time = seq(1, nrow(tempData))
-day = c()
-counter = 1
-for (i in 1:nrow(tempData)){
-  
-  if(counter > 365){
-    counter = 1
+subset = seq(1, length(time), 5)
+x = x[subset]
+y = y[subset]
+
+
+
+SEKernel2 <- function(par=c(20,0.2),x1,x2){
+  n1 <- length(x1)
+  n2 <- length(x2)
+  K <- matrix(NA,n1,n2)
+  for (i in 1:n2){
+    K[,i] <- (par[1]^2)*exp(-0.5*( (x1-x2[i])/par[2])^2 )
   }
-  
-  day = append(day, counter)
-  counter = counter +1
-  
+  return(K)
 }
 
-five_sequence = seq(1, nrow(tempData), 5)
-time_selection = time[five_sequence]
-day_selection = day[five_sequence]
-temperature = tempData$temp
-temperature_selection = temperature[five_sequence]
-
-
-x = time
-y = y
-
-
-
-# SquaredExpKernel <- function(x1,x2,sigmaF=1,l=3){
-#   n1 <- length(x1)
-#   n2 <- length(x2)
-#   K <- matrix(NA,n1,n2)
-#   for (i in 1:n2){
-#     K[,i] <- sigmaF^2*exp(-0.5*( (x1-x2[i])/l)^2 )
-#   }
-#   return(K)
-# }
-
-
-SE_Kernel <- function(sigmaF=1,l=1){
-  rval = function(x, y = NULL){
-    n1 <- length(x)
-    n2 <- length(y)
-    res = sigmaF^2*exp(-0.5*( (x-y)/l)^2 )
-    return(res)
-    
-  }
-  class(rval) = "kernel"
-  return(rval)
-  
-}
-
-LM = function(par = c(1, 0.1), X, y, sigmaNoise, k){
-  k = k(par[1],par[2])
-  n = length(X)
-  L = t(chol(k(X,X) + ((sigmaNoise^2)*diag(n))))
-  a = solve(t(L), solve(L,y))
-  logmar =  -0.5*(t(y)%*%a)-sum(diag(L)) - (n/2)*log(2*pi)
+LM <- function(par=c(20,0.2),X,y,k,sigmaNoise){
+  n <- length(y)
+  L <- t(chol(k(par,X,X)+((sigmaNoise^2)*diag(n))))
+  a <- solve(t(L),solve(L,y))
+  logmar <- -0.5*(t(y)%*%a)-sum(diag(L))-(n/2)*log(2*pi)
   return(logmar)
 }
 
 
-regression_fit = lm(scale(y) ~ scale(time) + I(time)^2)
-
-#Compute the residual variance
+regression_fit = lm(scale(y) ~ scale(x) + I(x)^2)
 sigmaNoise = sd(regression_fit$residuals)
 
+foo<-optim(par = c(1,0.1), fn = LM, X=scale(x),y=scale(y),k=SEKernel2,sigmaNoise=sigmaNoise, method="L-BFGS-B",
+           lower = c(.Machine$double.eps, .Machine$double.eps),control=list(fnscale=-1))
 
-foo = optim(par = c(1,0.1), fn = LM, X = scale(x), y = scale(y), sigmaNoise = sigmaNoise, k = SE_Kernel,
-            method = "L-BFGS-B",lower = c(.Machine$double.eps, .Machine$double.eps), control = list(fnscale = -1))
+foo$par
 
-LM(c(1,0.1), x,y, sigmaNoise, SE_Kernel)
+
+####################################### Via grid search ####################################################
+bestLM = LM(par = c(20,0.2), X = scale(x), y = scale(y), k = SEKernel2, sigmaNoise)
+bestLM
+besti = 20
+bestj = 0.2
+for(i in seq(1,50,1)){
+  for(j in seq(0.1,10,0.1)){
+    accuracy = LM(par = c(i,j), X = scale(x), y = scale(y), k = SEKernel2, sigmaNoise = sigmaNoise)
+    if(bestLM < accuracy){
+      bestLM = accuracy
+      besti = i
+      bestj = j
+    }
+  }
+}
+
+bestLM
+besti
+bestJ
+
+
+
+################################################################################
+library(kernlab)
+data <-
+  read.csv(
+    "https://github.com/STIMALiU/AdvMLCourse/raw/master/
+GaussianProcess/Code/banknoteFraud.csv",
+    header = FALSE,
+    sep = ","
+  )
+
+
+
+set.seed(111)
+selectTraining = sample(1:dim(data)[1], size = 1000, replace = FALSE)
+y = as.factor(data[,5]) #predictor
+x = as.matrix(data[,1:4]) # covariates
+yTrain = y[selectTraining]
+yTest = y[-selectTraining]
+xTrain = x[selectTraining,]
+xTest = x[-selectTraining,]
+#From the training data use 200 points for validation
+selectVal = sample(1:1000, size = 200, replace = FALSE)
+yVal = yTrain[selectVal]
+xVal = xTrain[selectVal,]
+yTrain = yTrain[-selectVal]
+xTrain = xTrain[-selectVal,]
+
+
+
+
+acVal = function(par = c(0.1)){
+  GP.fit_fraud = gausspr(x = xTrain, y = yTrain, kernel = "rbfdot", kpar = list(sigma=par[1]))
+  predVal = predict(GP.fit_fraud, xVal)
+  table(predVal, yVal)
+  accuracyVal = sum(predVal == yVal)/length(yVal)
+  return(accuracyVal)
+}
+
+selVars = c(1,2,3,4)
+GP.fit_fraud = gausspr(x = xTrain, y = yTrain, kernel = "rbfdot", kpar = 'automatic')
+GP.fit_fraud
+predVal = predict(GP.fit_fraud, xVal)
+table(predVal, yVal)
+accuracyVal = mean(predVal == yVal)
+
+
+#GridSearch for classification problem
+bestVal = accuracyVal
+for ( j in seq(0.1, 10, 0.1)){
+  accuracy = acVal(j)
+  if(bestVal < accuracy){
+    bestVal = accuracy
+    bestJ = j
+  } 
+}
+
+GP.fit_fraud = gausspr(x = xTrain, y = yTrain, kernel = "rbfdot", kpar = list(sigma=bestJ))
+predTest = predict(GP.fit_fraud, xTest[,selVars])
+table(predTest, yTest)
+mean(predTest == yTest)
+
+
+
+########################## Alternative solution using optim#############################
+foo = optim(par = c(0.1), fn = acVal, method = "L-BFGS-B", lower = c(.Machine$double.eps), control = list(fnscale=-1))
+acVal(foo$par)
+
+GP.fit_fraud = gausspr(x = xTrain[,selVars], y = yTrain, kernel = "rbfdot", kpar = list(sigma=foo$par))
+predTest = predict(GP.fit_fraud, xTest[,selVars])
+table(predTest, yTest)
+mean(predTest == yTest)
